@@ -1,0 +1,116 @@
+---
+title: ""
+author: "Bayansulu Tulepbayeva and Alua Birgebayeva"
+date: "Case Study 1: March 5, 2025"
+format: 
+  pdf:
+    keep-tex: true
+    include-in-header: 
+       text: |
+         \usepackage{fvextra}
+         \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+         \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
+    geometry: 
+      - left=1in
+      - right=1in
+      - top=1in
+      - bottom=1in
+---
+
+_Your written short report should be the first thing your reader encounters in your case study document. While you may choose to label each of the required components/sections of the short report with its own header (see below for an example of creating a header in Quarto), you do not need to do so provided that all of the required information is included. Your report should be self-contained and written in such a way that a quantitatively inclined friend (who has taken or is taking SDS 291) could follow what you did without necessarily knowing anything about the U.S. presidential election of 2000._ 
+
+_As you write your report, you may wish to reference the guide to typesetting regression lines in Quarto using LaTeX (linked at the top of our class Moodle page), the Quarto help page for formatting documents using Markdown (https://quarto.org/docs/authoring/markdown-basics.html), and the Quarto help page for customizing the output from executed code chunks (https://quarto.org/docs/computations/execution-options.html)._
+
+```{r}
+#| include: false
+
+# The written short report component of your case study should not have any visible R code, and the only R output that should be included are relevant plots and nicely formatted tables. Of course, this means that the R code to generate those figures/tables must be included *somewhere* in the Quarto .qmd document, but remain hidden from the reader! 
+#   We can accomplish this using chunk options, like the include: false option above.
+#   This tells Quarto to run and execute the code, but to exclude both the code and any associated output from the rendered PDF document.
+
+# Loading necessary packages
+library(tidyverse)
+library(Sleuth2)      # the package containing the data for the case study
+library(kableExtra)   # for creating nicely formatted tables in Quarto
+
+# Loading the case study data
+election <- Sleuth2::ex0825
+
+# Creating a second dataset with Palm Beach County excluded
+election_wo_pb <- election |> filter(County != "Palm Beach")
+
+# Loading another dataset on wine consumption and heart disease mortality (deaths per 1000 individuals), just as an example
+wine <- Sleuth2::ex0823
+```
+
+### An example section heading
+
+_When you create plots for your case study report, the `echo: false` chunk option tells Quarto to include the final output of your R commands (in this case, a plot) in your rendered PDF *without* printing the underlying R commands that generated that plot! The message and warning flags both prevent R from printing any additional text with error messages or warnings to the PDF._
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+wine |> ggplot(aes(x = Wine, y = Mortality)) + geom_point() + ggtitle("Association between wine consumption and mortality rates.")
+```
+
+_When reporting the results of your regression analysis, I would like you to write out a mathematical description of the main/final population model for the mean. Here is an example of what that might look like:_
+
+Let $mort_i$ denote the heart disease mortality rate in country $i$ (measured in deaths per 1,000 individuals) and $wine_i$ denote the consumption of wine (measured in liters per person per year). Our final linear regression model is $$E[mort_i | wine_i] = \beta_0 + \beta_1\left(wine_i\right).$$
+
+_You do not need to write out the fitted regression line, but you should (at a minimum) provide a table summarizing the estimated coefficients of the model and their corresponding standard errors, like the one shown below. A print-out from the `summary()` command alone is not sufficient._
+
+```{r}
+#| echo: false
+
+# Fitting the regression line for mean mortality as a function of wine consumption
+wine_lm <- lm(Mortality ~ Wine, data = wine)
+
+# Representing the regression table as a dataframe (i.e., tidying the summary() output)
+wine_lm_table <- summary(wine_lm)$coefficients
+
+# Creating a nicely formatted table from the dataframe using the kable package
+#   You can find more information about this package here: https://haozhu233.github.io/kableExtra/awesome_table_in_pdf.pdf
+wine_lm_table |> kbl(col.names = c("Name for Col. 1", "Name for Col. 2", "Name for Col. 3", "Name for Col. 4"), align = "c", booktabs = T, linesep="", digits = c(2, 2, 2, 4)) |> kable_classic(full_width = F, latex_options = c("HOLD_position"))
+
+```
+
+# R Appendix
+
+_Copy and paste all code that you used for your case study into one chunk at the end of your written report. Before submitting your case study, take one final look at the R Appendix and make sure that all code is clearly visible. If you see a line running off the side of the PDF, please split the code over multiple lines using a linebreak. The header at the top of this template should ensure that lines of code are automatically wrapped in your final document._
+
+```{r}
+#| message: FALSE
+#| warning: FALSE
+
+# Loading necessary packages
+library(tidyverse)
+library(Sleuth2)
+library(broom)        
+library(kableExtra)   
+
+# Loading the data for case study one
+election <- Sleuth2::ex0825
+
+# Creating a second dataset with Palm Beach County excluded
+election_wo_pb <- election |> filter(County != "Palm Beach")
+
+# Loading another dataset on wine consumption and heart disease mortality
+wine <- Sleuth2::ex0823
+
+# Creating a scatterplot for the relationship between mortality and wine consumption
+wine |> ggplot(aes(x = Wine, y = Mortality)) + geom_point() + 
+  ggtitle("Association between wine consumption and mortality rates.")
+
+# Fitting and summarizing the regression line for mean mortality 
+# as a function of wine consumption
+wine.lm <- lm(Mortality ~ Wine, data = wine)
+wine.lm.table <- wine.lm |> tidy()
+wine.lm.table |> kbl(col.names = c("Name for Col. 1", "Name for Col. 2", 
+                                   "Name for Col. 3", "Name for Col. 4", 
+                                   "Name for Col. 5"), 
+                     align = "c", booktabs = T, linesep="", 
+                     digits = c(2, 2, 2, 4)) |> 
+  kable_classic(full_width = F, latex_options = c("HOLD_position"))
+```
