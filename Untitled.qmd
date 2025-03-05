@@ -1,7 +1,7 @@
 ---
-title: "Election results in 2000"
+title: "Case study 1: Election results in 2000"
 author: "Bayansulu Tulepbayeva and Alua Birgebayeva"
-date: "Case Study 1: March 5, 2025"
+date: "March 5, 2025"
 format: 
   pdf:
     keep-tex: true
@@ -17,14 +17,25 @@ format:
       - bottom=1in
 ---
 
-## Introduction
+## Introduction  
+
+On the night of **November 7, 2000**, millions of Americans watched as the U.S. Presidential election came down to a **single state: Florida**. With an outcome hanging on a razor-thin margin, a **small but critical voting anomaly** in one Florida county would spark controversy, lawsuits, and a Supreme Court decision that ultimately decided the next president.  
+
+At the heart of this controversy was **Palm Beach County**, where a confusing **"butterfly ballot" design** may have led thousands of voters to **accidentally select Pat Buchanan instead of Al Gore**. The unusual layout, with candidates listed on alternating left and right pages, may have caused **misalignment between voter intent and actual votes recorded**.  
+
+This report seeks to answer a critical question: **Did Buchanan receive an abnormally high number of votes in Palm Beach County due to ballot confusion?**  
+
+To investigate, we applied **statistical modeling** using data from **66 other Florida counties** to predict the expected number of Buchanan votes in Palm Beach based on voting trends. Using a **linear regression model**, we computed a **95% prediction interval** to determine how many votes Buchanan **should have received** if Palm Beach followed normal voting patterns.  
+
+If Buchanan’s actual vote count **far exceeds** this predicted range, it would suggest that **thousands of votes meant for Gore were miscast**, potentially **altering the outcome of the entire election**. Beyond this specific case, our analysis demonstrates the **real-world consequences of flawed ballot design** and how **statistical modeling can uncover hidden voting irregularities**.  
 
 
 ## Data & Methodology
 
-We analyzed 67 Florida counties using data from the Sleuth2 package. Since Palm Beach County is suspected to be an outlier, we excluded it from our regression model to avoid bias.
+We analyzed data from 67 Florida counties using the Sleuth2 package, which contains vote counts for Buchanan and Bush during the 2000 U.S. Presidential Election. As we mentioned above, due to its confusing “butterfly” ballot design, Palm Beach County is suspected to be an outlier. To avoid bias in our analysis, we excluded Palm Beach County from the regression model, focusing on the remaining 66 counties.
 
-To estimate how many votes Buchanan should have received in Palm Beach, we built a linear regression model predicting Buchanan votes based on Bush votes in the other counties. The equation of our model is:
+Our objective was to estimate how many votes Buchanan should have received in Palm Beach County if it had followed the same voting pattern as the other counties. To achieve this, we built a simple linear regression model predicting Buchanan votes based on Bush votes from these 66 counties. The assumption is that in counties unaffected by ballot design issues, the number of Buchanan votes is systematically related to the number of Bush votes.
+
 ```{r}
 #| include: false
 
@@ -116,7 +127,182 @@ Key findings:
 
 ## Prediction for Palm Beach County 
 
+Using our fitted regression model, we can estimate the **expected number of Buchanan votes** in Palm Beach County based on its **Bush vote count**. From the election data we pulled out, and found that Palm Beach County had **152,846 Bush votes**, then we use our regression equation:
+
+$$
+\hat{\text{Buchanan}}_{\text{Palm Beach}} = 65.57 + 0.003482 \times 152,846
+$$
+
+Solving this:
+
+$$
+\hat{\text{Buchanan}}_{\text{Palm Beach}} \approx 597.77
+$$
+
+This means that, based on the trend in other counties, **Palm Beach County should have received approximately 598 Buchanan votes**. To account for natural variation, we also calculate a **95% prediction interval**.
+
+
 ```{r}
+#| echo: false 
+# Get Bush votes in Palm Beach County
+pb_bush_votes <- election |> filter(County == "Palm Beach") |> pull(Bush2000)
+
+# Predict Buchanan votes for Palm Beach (95% prediction interval)
+predicted_pb_buchanan <- predict(model, newdata = data.frame(Bush2000 = pb_bush_votes), interval = "prediction", level = 0.95)
+
+
+predicted_pb_df <- data.frame(
+  County = "Palm Beach",
+  Predicted_Buchanan_Votes = predicted_pb_buchanan[1],
+  Lower_Bound = predicted_pb_buchanan[2],
+  Upper_Bound = predicted_pb_buchanan[3]
+)
+
+predicted_pb_df |> 
+  kbl(col.names = c("County", "Predicted Buchanan Votes", "Lower Bound (95% CI)", "Upper Bound (95% CI)"), 
+      align = "c", booktabs = TRUE) |> 
+  kable_classic(full_width = FALSE, latex_options = c("HOLD_position"))
+
+```
+
+Key findings: 
+
+- Predicted Buchanan votes for Palm Beach: 598 votes
+
+- 95% Prediction Interval: (365, 831 votes)
+
+- This means that in a typical Florida county, Buchanan’s votes should not exceed 831.
+
+If the actual Buchanan votes in Palm Beach exceed this range, it suggests an unusual voting pattern, possibly due to ballot confusion.
+
+## Actual vs. Predicted Votes & Miscast Estimate
+
+Next, moving on to the next section, we pulled the actual number of **Buchanan votes in Palm Beach County** which was **3,407**. However, based on our regression model, the **predicted number of Buchanan votes** was **approximately 598 votes**, with a **95% prediction interval ranging from 365 to 831 votes**.
+
+Since the **actual Buchanan vote count (3,407) is far above the upper bound of 831**, this suggests that a significant number of votes were **likely miscast** due to ballot confusion. (Refer to _Results: Actual vs. Predicted Votes Table_)
+
+
+```{r}
+#| include: false  
+# Get actual Buchanan votes in Palm Beach
+actual_pb_buchanan <- election |> filter(County == "Palm Beach") |> pull(Buchanan2000)
+
+# Print actual Buchanan votes
+actual_pb_buchanan
+
+```
+
+## Estimating the Miscast votes 
+
+We estimate the number of **miscast votes** as the difference between the actual Buchanan votes and the **upper bound of the prediction interval** because it acts as a threshold representing the highest number of Buchanan votes and the any excess over this limit can be interpreted as miscast votes likely intended for Al Gore:
+
+$$
+\text{Miscast Votes} = \text{Actual Buchanan Votes} - \text{Upper Bound of Prediction Interval}
+$$
+
+$$
+\text{Miscast Votes} = 3,407 - 831 = 2,576
+$$
+
+This suggests that **approximately 2,576 votes** intended for Al Gore were mistakenly cast for Buchanan.
+
+
+```{r}
+#| include: false
+# Estimate miscast votes (Actual Buchanan votes - Upper Bound of Prediction Interval)
+miscast_votes <- actual_pb_buchanan - predicted_pb_buchanan[3]
+
+# Print estimated miscast votes
+miscast_votes
+
+```
+ 
+ 
+## Results: Actual vs. Predicted Votes Table 
+
+```{r}
+#| echo: false
+# Create a summary table for the report
+miscast_summary_df <- data.frame(
+  County = "Palm Beach",
+  Actual_Buchanan_Votes = actual_pb_buchanan,
+  Predicted_Upper_Bound = predicted_pb_buchanan[3],
+  Estimated_Miscast_Votes = miscast_votes
+)
+
+# Display as a well-formatted table
+library(kableExtra)
+miscast_summary_df |> 
+  kbl(col.names = c("County", "Actual Buchanan Votes", "Upper Bound Prediction", "Estimated Miscast Votes"), 
+      align = "c", booktabs = TRUE) |> 
+  kable_classic(full_width = FALSE, latex_options = c("HOLD_position"))
+
+```
+
+Key findings: 
+
+- Actual Buchanan votes in Palm Beach County: 3,407 votes
+
+- Expected (Upper Bound of Prediction Interval): 831 votes 
+
+- Estimated miscast votes: ~2,576 votes
+
+Since Bush won Florida by fewer than 600 votes, these miscast votes could have been decisive in the election outcome.
+
+## Conclusion and the Final Summary 
+
+Our analysis provides strong **statistical evidence** that Palm Beach County's **"butterfly ballot" design** led to a significant number of miscast votes in the **2000 U.S. Presidential Election**.  
+
+Using a linear regression model trained on data from 66 other Florida counties, we predicted that Buchanan should have received **approximately 598 votes** in Palm Beach County, with a **95% prediction interval ranging from 365 to 831 votes**.  
+
+However, the **actual Buchanan** vote count in Palm Beach was **3,407** votes, which is far beyond the expected range. This suggests an **excess of approximately 2,576 Buchanan votes**, which were likely miscast by voters who **intended to vote for Al Gore** but mistakenly selected Buchanan due to ballot confusion.
+
+### **Implications of Our Findings**
+- The **discrepancy between expected and actual Buchanan votes** suggests a **major ballot design flaw**.
+- Since **Bush won Florida by fewer than 600 votes**, the **miscast votes in Palm Beach alone could have changed the election outcome**.
+- This highlights the **critical role of clear ballot design** in ensuring voter intent is accurately recorded.
+
+### **Final Thoughts**
+Our findings support the claim that the **ballot layout in Palm Beach County significantly affected the election results**. The discrepancy between expected and actual Buchanan votes suggests that a **design issue—not voter preference—led to a major voting error**.  
+
+This case underscores the importance of **human-centered election design**, as even small formatting decisions can have **large-scale consequences** in democratic processes.
+
+
+# R Appendix
+
+```{r}
+#| eval: FALSE
+#| message: FALSE
+#| warning: FALSE
+
+# Loading necessary packages
+library(tidyverse)
+library(Sleuth2)      # the package containing the data for the case study
+library(kableExtra)   # for creating nicely formatted tables in Quarto
+
+# Loading the case study data
+election <- Sleuth2::ex0825
+
+# Creating a second dataset with Palm Beach County excluded
+election_wo_pb <- election |> filter(County != "Palm Beach")
+
+# Fit the linear model
+model <- lm(Buchanan2000 ~ Bush2000, data = election_wo_pb)
+
+# Display regression summary
+summary(model)
+
+library(kableExtra)
+
+# Extract regression coefficients
+regression_table <- summary(model)$coefficients |> 
+  kbl(col.names = c("Estimate", "Std. Error", "t value", "Pr(>|t|)"), 
+      align = "c", booktabs = TRUE) |> 
+  kable_classic(full_width = FALSE, latex_options = c("HOLD_position"))
+
+# Show the table
+regression_table
+
 # Get Bush votes in Palm Beach County
 pb_bush_votes <- election |> filter(County == "Palm Beach") |> pull(Bush2000)
 
@@ -138,34 +324,18 @@ predicted_pb_df |>
       align = "c", booktabs = TRUE) |> 
   kable_classic(full_width = FALSE, latex_options = c("HOLD_position"))
 
-```
-
-## Actual vs. Predicted Votes & Miscast Estimate
-
-```{r}
 # Get actual Buchanan votes in Palm Beach
 actual_pb_buchanan <- election |> filter(County == "Palm Beach") |> pull(Buchanan2000)
 
 # Print actual Buchanan votes
 actual_pb_buchanan
 
-```
-
-## Estimating the Midcast votes 
-
-```{r}
 # Estimate miscast votes (Actual Buchanan votes - Upper Bound of Prediction Interval)
 miscast_votes <- actual_pb_buchanan - predicted_pb_buchanan[3]
 
 # Print estimated miscast votes
 miscast_votes
 
-```
- 
- 
-## Results 
-
-```{r}
 # Create a summary table for the report
 miscast_summary_df <- data.frame(
   County = "Palm Beach",
@@ -181,16 +351,6 @@ miscast_summary_df |>
       align = "c", booktabs = TRUE) |> 
   kable_classic(full_width = FALSE, latex_options = c("HOLD_position"))
 
-```
-
-
-# R Appendix
-
-_Copy and paste all code that you used for your case study into one chunk at the end of your written report. Before submitting your case study, take one final look at the R Appendix and make sure that all code is clearly visible. If you see a line running off the side of the PDF, please split the code over multiple lines using a linebreak. The header at the top of this template should ensure that lines of code are automatically wrapped in your final document._
-
-```{r}
-#| message: FALSE
-#| warning: FALSE
-
 
 ```
+
