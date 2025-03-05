@@ -17,10 +17,6 @@ format:
       - bottom=1in
 ---
 
-_Your written short report should be the first thing your reader encounters in your case study document. While you may choose to label each of the required components/sections of the short report with its own header (see below for an example of creating a header in Quarto), you do not need to do so provided that all of the required information is included. Your report should be self-contained and written in such a way that a quantitatively inclined friend (who has taken or is taking SDS 291) could follow what you did without necessarily knowing anything about the U.S. presidential election of 2000._ 
-
-_As you write your report, you may wish to reference the guide to typesetting regression lines in Quarto using LaTeX (linked at the top of our class Moodle page), the Quarto help page for formatting documents using Markdown (https://quarto.org/docs/authoring/markdown-basics.html), and the Quarto help page for customizing the output from executed code chunks (https://quarto.org/docs/computations/execution-options.html)._
-
 ### Introduction
 
 
@@ -144,17 +140,6 @@ miscast_summary_df |>
 
 ```
 
-_When reporting the results of your regression analysis, I would like you to write out a mathematical description of the main/final population model for the mean. Here is an example of what that might look like:_
-
-Let $mort_i$ denote the heart disease mortality rate in country $i$ (measured in deaths per 1,000 individuals) and $wine_i$ denote the consumption of wine (measured in liters per person per year). Our final linear regression model is $$E[mort_i | wine_i] = \beta_0 + \beta_1\left(wine_i\right).$$
-
-_You do not need to write out the fitted regression line, but you should (at a minimum) provide a table summarizing the estimated coefficients of the model and their corresponding standard errors, like the one shown below. A print-out from the `summary()` command alone is not sufficient._
-
-```{r}
-#| echo: false
-
-
-```
 
 # R Appendix
 
