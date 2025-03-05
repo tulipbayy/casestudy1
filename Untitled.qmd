@@ -1,5 +1,5 @@
 ---
-title: ""
+title: "Election results in 2000"
 author: "Bayansulu Tulepbayeva and Alua Birgebayeva"
 date: "Case Study 1: March 5, 2025"
 format: 
@@ -17,10 +17,10 @@ format:
       - bottom=1in
 ---
 
-### Introduction
+## Introduction
 
 
-### Data & Methodology
+## Data & Methodology
 
 We analyzed 67 Florida counties using data from the Sleuth2 package. Since Palm Beach County is suspected to be an outlier, we excluded it from our regression model to avoid bias.
 
@@ -41,9 +41,41 @@ election_wo_pb <- election |> filter(County != "Palm Beach")
 
 ```
 
-### Regression Model 
+## Regression Model Results
+
+To estimate the expected number of **Buchanan votes** in a county based on **Bush votes**, we use a **simple linear regression model**. This model predicts the mean number of Buchanan votes in a county, given the number of Bush votes.
+
+### Mathematical Description of the Model
+
+Let $(\text{Buchanan}_i)$ represent the number of votes for **Pat Buchanan** in county $(i)$, and let $(\text{Bush}_i)$ represent the number of votes for **George W. Bush** in county $(i)$.
+
+Our **final population model for the mean** is:
+
+$$
+E[\text{Buchanan}_i \mid \text{Bush}_i] = \beta_0 + \beta_1 \text{Bush}_i
+$$
+
+where:
+
+- $(\beta_0)$ is the **intercept**, representing the expected Buchanan votes when Bush votes are **zero**.
+
+- $(\beta_1)$ is the **slope**, representing the expected **change in Buchanan votes** for each additional Bush vote.
+
+### Fitted Regression Model
+
+Using data from **66 Florida counties (excluding Palm Beach County)**, we estimated the model parameters:
+
+$$
+\hat{\text{Buchanan}}_i = 65.57 + 0.003482 \times \text{Bush}_i
+$$
+
+This means that for every additional **1,000 votes** for Bush, Buchanan’s expected vote count **increases by approximately 3.48 votes**.
+
+### Regression Coefficients Table
+
 
 ```{r}
+#| include: false
 #| echo: false
 #| message: false
 #| warning: false
@@ -57,6 +89,7 @@ summary(model)
 ```
 
 ```{r}
+#| echo: false
 # Format and display the regression summary in a clean table
 library(kableExtra)
 
@@ -71,7 +104,17 @@ regression_table
 
 ```
 
-### Prediction for Palm Beach County 
+Key findings:
+
+- Even in a county with 0 Bush votes, Buchanan is expected to receive around 66 votes (Intercept). 
+
+- Buchanan votes increase by ~3.48 for every 1,000 additional Bush votes (Slope).
+
+- About 75% of the variation in Buchanan votes is explained by Bush votes, showing a strong correlation.
+
+- The relationship between Buchanan and Bush votes is highly statistically significant.
+
+## Prediction for Palm Beach County 
 
 ```{r}
 # Get Bush votes in Palm Beach County
@@ -97,7 +140,7 @@ predicted_pb_df |>
 
 ```
 
-### Actual vs. Predicted Votes & Miscast Estimate
+## Actual vs. Predicted Votes & Miscast Estimate
 
 ```{r}
 # Get actual Buchanan votes in Palm Beach
@@ -108,7 +151,7 @@ actual_pb_buchanan
 
 ```
 
-### Estimating the Midcast votes 
+## Estimating the Midcast votes 
 
 ```{r}
 # Estimate miscast votes (Actual Buchanan votes - Upper Bound of Prediction Interval)
@@ -120,7 +163,7 @@ miscast_votes
 ```
  
  
-### Results 
+## Results 
 
 ```{r}
 # Create a summary table for the report
