@@ -21,12 +21,16 @@ _Your written short report should be the first thing your reader encounters in y
 
 _As you write your report, you may wish to reference the guide to typesetting regression lines in Quarto using LaTeX (linked at the top of our class Moodle page), the Quarto help page for formatting documents using Markdown (https://quarto.org/docs/authoring/markdown-basics.html), and the Quarto help page for customizing the output from executed code chunks (https://quarto.org/docs/computations/execution-options.html)._
 
+### Introduction
+
+
+### Data & Methodology
+
+We analyzed 67 Florida counties using data from the Sleuth2 package. Since Palm Beach County is suspected to be an outlier, we excluded it from our regression model to avoid bias.
+
+To estimate how many votes Buchanan should have received in Palm Beach, we built a linear regression model predicting Buchanan votes based on Bush votes in the other counties. The equation of our model is:
 ```{r}
 #| include: false
-
-# The written short report component of your case study should not have any visible R code, and the only R output that should be included are relevant plots and nicely formatted tables. Of course, this means that the R code to generate those figures/tables must be included *somewhere* in the Quarto .qmd document, but remain hidden from the reader! 
-#   We can accomplish this using chunk options, like the include: false option above.
-#   This tells Quarto to run and execute the code, but to exclude both the code and any associated output from the rendered PDF document.
 
 # Loading necessary packages
 library(tidyverse)
@@ -39,20 +43,105 @@ election <- Sleuth2::ex0825
 # Creating a second dataset with Palm Beach County excluded
 election_wo_pb <- election |> filter(County != "Palm Beach")
 
-# Loading another dataset on wine consumption and heart disease mortality (deaths per 1000 individuals), just as an example
-wine <- Sleuth2::ex0823
 ```
 
-### An example section heading
-
-_When you create plots for your case study report, the `echo: false` chunk option tells Quarto to include the final output of your R commands (in this case, a plot) in your rendered PDF *without* printing the underlying R commands that generated that plot! The message and warning flags both prevent R from printing any additional text with error messages or warnings to the PDF._
+### Regression Model 
 
 ```{r}
 #| echo: false
 #| message: false
 #| warning: false
 
-wine |> ggplot(aes(x = Wine, y = Mortality)) + geom_point() + ggtitle("Association between wine consumption and mortality rates.")
+# Fit the linear model
+model <- lm(Buchanan2000 ~ Bush2000, data = election_wo_pb)
+
+# Display regression summary
+summary(model)
+
+```
+
+```{r}
+# Format and display the regression summary in a clean table
+library(kableExtra)
+
+# Extract regression coefficients
+regression_table <- summary(model)$coefficients |> 
+  kbl(col.names = c("Estimate", "Std. Error", "t value", "Pr(>|t|)"), 
+      align = "c", booktabs = TRUE) |> 
+  kable_classic(full_width = FALSE, latex_options = c("HOLD_position"))
+
+# Show the table
+regression_table
+
+```
+
+### Prediction for Palm Beach County 
+
+```{r}
+# Get Bush votes in Palm Beach County
+pb_bush_votes <- election |> filter(County == "Palm Beach") |> pull(Bush2000)
+
+# Predict Buchanan votes for Palm Beach (95% prediction interval)
+predicted_pb_buchanan <- predict(model, newdata = data.frame(Bush2000 = pb_bush_votes), interval = "prediction", level = 0.95)
+
+# Show the prediction interval
+predicted_pb_buchanan
+
+predicted_pb_df <- data.frame(
+  County = "Palm Beach",
+  Predicted_Buchanan_Votes = predicted_pb_buchanan[1],
+  Lower_Bound = predicted_pb_buchanan[2],
+  Upper_Bound = predicted_pb_buchanan[3]
+)
+
+predicted_pb_df |> 
+  kbl(col.names = c("County", "Predicted Buchanan Votes", "Lower Bound (95% CI)", "Upper Bound (95% CI)"), 
+      align = "c", booktabs = TRUE) |> 
+  kable_classic(full_width = FALSE, latex_options = c("HOLD_position"))
+
+```
+
+### Actual vs. Predicted Votes & Miscast Estimate
+
+```{r}
+# Get actual Buchanan votes in Palm Beach
+actual_pb_buchanan <- election |> filter(County == "Palm Beach") |> pull(Buchanan2000)
+
+# Print actual Buchanan votes
+actual_pb_buchanan
+
+```
+
+### Estimating the Midcast votes 
+
+```{r}
+# Estimate miscast votes (Actual Buchanan votes - Upper Bound of Prediction Interval)
+miscast_votes <- actual_pb_buchanan - predicted_pb_buchanan[3]
+
+# Print estimated miscast votes
+miscast_votes
+
+```
+ 
+ 
+### Results 
+
+```{r}
+# Create a summary table for the report
+miscast_summary_df <- data.frame(
+  County = "Palm Beach",
+  Actual_Buchanan_Votes = actual_pb_buchanan,
+  Predicted_Upper_Bound = predicted_pb_buchanan[3],
+  Estimated_Miscast_Votes = miscast_votes
+)
+
+# Display as a well-formatted table
+library(kableExtra)
+miscast_summary_df |> 
+  kbl(col.names = c("County", "Actual Buchanan Votes", "Upper Bound Prediction", "Estimated Miscast Votes"), 
+      align = "c", booktabs = TRUE) |> 
+  kable_classic(full_width = FALSE, latex_options = c("HOLD_position"))
+
 ```
 
 _When reporting the results of your regression analysis, I would like you to write out a mathematical description of the main/final population model for the mean. Here is an example of what that might look like:_
@@ -64,15 +153,6 @@ _You do not need to write out the fitted regression line, but you should (at a m
 ```{r}
 #| echo: false
 
-# Fitting the regression line for mean mortality as a function of wine consumption
-wine_lm <- lm(Mortality ~ Wine, data = wine)
-
-# Representing the regression table as a dataframe (i.e., tidying the summary() output)
-wine_lm_table <- summary(wine_lm)$coefficients
-
-# Creating a nicely formatted table from the dataframe using the kable package
-#   You can find more information about this package here: https://haozhu233.github.io/kableExtra/awesome_table_in_pdf.pdf
-wine_lm_table |> kbl(col.names = c("Name for Col. 1", "Name for Col. 2", "Name for Col. 3", "Name for Col. 4"), align = "c", booktabs = T, linesep="", digits = c(2, 2, 2, 4)) |> kable_classic(full_width = F, latex_options = c("HOLD_position"))
 
 ```
 
@@ -84,33 +164,5 @@ _Copy and paste all code that you used for your case study into one chunk at the
 #| message: FALSE
 #| warning: FALSE
 
-# Loading necessary packages
-library(tidyverse)
-library(Sleuth2)
-library(broom)        
-library(kableExtra)   
 
-# Loading the data for case study one
-election <- Sleuth2::ex0825
-
-# Creating a second dataset with Palm Beach County excluded
-election_wo_pb <- election |> filter(County != "Palm Beach")
-
-# Loading another dataset on wine consumption and heart disease mortality
-wine <- Sleuth2::ex0823
-
-# Creating a scatterplot for the relationship between mortality and wine consumption
-wine |> ggplot(aes(x = Wine, y = Mortality)) + geom_point() + 
-  ggtitle("Association between wine consumption and mortality rates.")
-
-# Fitting and summarizing the regression line for mean mortality 
-# as a function of wine consumption
-wine.lm <- lm(Mortality ~ Wine, data = wine)
-wine.lm.table <- wine.lm |> tidy()
-wine.lm.table |> kbl(col.names = c("Name for Col. 1", "Name for Col. 2", 
-                                   "Name for Col. 3", "Name for Col. 4", 
-                                   "Name for Col. 5"), 
-                     align = "c", booktabs = T, linesep="", 
-                     digits = c(2, 2, 2, 4)) |> 
-  kable_classic(full_width = F, latex_options = c("HOLD_position"))
 ```
